@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Multi-Player</title>
+    <style>
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* App Name Animation */
+        .app-name {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            animation: fadeIn 1.5s ease-out, pulse 2s infinite alternate;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+        
+        /* Disclaimer Screen */
+        #disclaimerScreen {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .disclaimer-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: #555;
+        }
+        
+        .disclaimer-emoji {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        .cancel-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(255, 71, 87, 0.4);
+            transition: all 0.3s ease;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .cancel-btn.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .cancel-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(255, 71, 87, 0.6);
+        }
+        
+        /* Main Screen */
+        #mainScreen {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .input-section {
+            margin-bottom: 25px;
+        }
+        
+        .input-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .url-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .url-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            outline: none;
+        }
+        
+        .number-section {
+            margin-bottom: 25px;
+        }
+        
+        .number-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .number-btn {
+            background: #f1f2f6;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .number-btn:hover {
+            background: #dfe4ea;
+        }
+        
+        .number-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .custom-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+        
+        .load-btn {
+            background: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            width: 100%;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.3);
+        }
+        
+        .load-btn:hover {
+            background: #26c464;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 213, 115, 0.4);
+        }
+        
+        /* Players Grid */
+        #playersGrid {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .player-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .player-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .player-wrapper {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        }
+        
+        .player-iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* Controls */
+        .controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        
+        .control-btn {
+            background: #3742fa;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(55, 66, 250, 0.3);
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(55, 66, 250, 0.4);
+        }
+        
+        .control-btn.pause {
+            background: #ffa502;
+        }
+        
+        /* Floating Buttons */
+        .floating-btns {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .floating-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: #2ed573;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(46, 213, 115, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .floating-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(46, 213, 115, 0.6);
+        }
+        
+        .floating-btn.add-another {
+            background: #ff6348;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .app-name {
+                font-size: 2rem;
+            }
+            
+            #disclaimerScreen, #mainScreen {
+                padding: 20px;
+            }
+            
+            #playersGrid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .controls {
+                width: 90%;
+                padding: 10px 15px;
+            }
+            
+            .control-btn {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .floating-btns {
+                bottom: 90px;
+                right: 15px;
+            }
+            
+            .floating-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .app-name {
+                font-size: 1.8rem;
+            }
+            
+            #playersGrid {
+                grid-template-columns: 1fr;
+            }
+            
+            .number-buttons {
+                gap: 5px;
+            }
+            
+            .number-btn {
+                min-width: 50px;
+                padding: 8px 10px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- App Name with Animation -->
+        <h1 class="app-name">YouTube Multi-Player 🎬</h1>
+        
+        <!-- Disclaimer Screen -->
+        <div id="disclaimerScreen">
+            <div class="disclaimer-emoji">⚠️</div>
+            <p class="disclaimer-text">
+                You can be banned from YouTube due to using third party viewing sites. There are no third party sites which can give you free or paid watch time and views like this. Sometimes, many people don't get banned, so that thing depends on you. Choose this if you feel safe. This is only to warn you.
+            </p>
+            <button id="cancelBtn" class="cancel-btn">❌</button>
+        </div>
+        
+        <!-- Main Screen -->
+        <div id="mainScreen">
+            <div class="input-section">
+                <label class="input-label" for="youtubeUrl">Paste your YouTube link 🎥</label>
+                <input type="text" id="youtubeUrl" class="url-input" placeholder="https://www.youtube.com/watch?v=...">
+            </div>
+            
+            <div class="number-section">
+                <label class="input-label">Select number of players</label>
+                <div class="number-buttons">
+                    <button class="number-btn" data-count="5">5</button>
+                    <button class="number-btn" data-count="10">10</button>
+                    <button class="number-btn" data-count="15">15</button>
+                    <button class="number-btn" data-count="20">20</button>
+                    <button class="number-btn" data-count="25">25</button>
+                    <button class="number-btn" data-count="30">30</button>
+                    <button class="number-btn" data-count="35">35</button>
+                    <button class="number-btn" data-count="40">40</button>
+                </div>
+                <input type="number" id="customCount" class="custom-input" placeholder="Or enter custom number">
+            </div>
+            
+            <button id="loadPlayersBtn" class="load-btn">Load Players 🚀</button>
+            
+            <!-- Players Grid -->
+            <div id="playersGrid"></div>
+        </div>
+    </div>
+    
+    <!-- Controls -->
+    <div class="controls">
+        <button id="playAllBtn" class="control-btn">Play All ▶️</button>
+        <button id="pauseAllBtn" class="control-btn pause">Pause All ⏸️</button>
+    </div>
+    
+    <!-- Floating Buttons -->
+    <div class="floating-btns">
+        <button id="addPlayerBtn" class="floating-btn">➕</button>
+        <button id="addAnotherPlayerBtn" class="floating-btn add-another">➕➕</button>
+    </div>
+
+    <!-- YouTube IFrame API -->
+    <script>
+        // Global variables
+        let players = [];
+        let currentVideoId = '';
+        let playerCount = 0;
+        let pauseResumeInterval;
+        
+        // Wait for the YouTube IFrame API to load
+        let tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        let firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        
+        // Initialize the app when the page loads
+        window.onload = function() {
+            initializeApp();
+        };
+        
+        // Initialize the app
+        function initializeApp() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Enable cancel button after 5 seconds
+            setTimeout(() => {
+                document.getElementById('cancelBtn').classList.add('active');
+            }, 5000);
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Cancel button
+            document.getElementById('cancelBtn').addEventListener('click', function() {
+                document.getElementById('disclaimerScreen').style.display = 'none';
+                document.getElementById('mainScreen').style.display = 'block';
+            });
+            
+            // Number buttons
+            const numberButtons = document.querySelectorAll('.number-btn');
+            numberButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    numberButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    // Set custom input value
+                    document.getElementById('customCount').value = this.getAttribute('data-count');
+                });
+            });
+            
+            // Custom number input
+            document.getElementById('customCount').addEventListener('input', function() {
+                // Remove active class from all buttons when custom input is used
+                numberButtons.forEach(btn => btn.classList.remove('active'));
+            });
+            
+            // Load players button
+            document.getElementById('loadPlayersBtn').addEventListener('click', loadPlayers);
+            
+            // Play all button
+            document.getElementById('playAllBtn').addEventListener('click', playAllVideos);
+            
+            // Pause all button
+            document.getElementById('pauseAllBtn').addEventListener('click', pauseAllVideos);
+            
+            // Add player button
+            document.getElementById('addPlayerBtn').addEventListener('click', addPlayer);
+            
+            // Add another player button
+            document.getElementById('addAnotherPlayerBtn').addEventListener('click', addAnotherPlayer);
+        }
+        
+        // Extract video ID from YouTube URL
+        function extractVideoId(url) {
+            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[7].length === 11) ? match[7] : null;
+        }
+        
+        // Load players based on user input
+        function loadPlayers() {
+            const url = document.getElementById('youtubeUrl').value.trim();
+            const videoId = extractVideoId(url);
+            
+            if (!videoId) {
+                alert('Please enter a valid YouTube URL');
+                return;
+            }
+            
+            currentVideoId = videoId;
+            playerCount = parseInt(document.getElementById('customCount').value) || 5;
+            
+            if (playerCount < 1 || playerCount > 100) {
+                alert('Please enter a number between 1 and 100');
+                return;
+            }
+            
+            // Clear existing players
+            players = [];
+            document.getElementById('playersGrid').innerHTML = '';
+            
+            // Create players
+            for (let i = 0; i < playerCount; i++) {
+                createPlayer(i);
+            }
+            
+            // Show players grid and controls
+            document.getElementById('playersGrid').style.display = 'grid';
+            document.querySelector('.controls').style.display = 'flex';
+            document.querySelector('.floating-btns').style.display = 'flex';
+            
+            // Start pause/resume cycle
+            startPauseResumeCycle();
+        }
+        
+        // Create a YouTube player
+        function createPlayer(index) {
+            const playerGrid = document.getElementById('playersGrid');
+            
+            // Create player card
+            const playerCard = document.createElement('div');
+            playerCard.className = 'player-card';
+            playerCard.id = `player-card-${index}`;
+            
+            // Create player wrapper
+            const playerWrapper = document.createElement('div');
+            playerWrapper.className = 'player-wrapper';
+            
+            // Create iframe
+            const iframe = document.createElement('div');
+            iframe.id = `player-${index}`;
+            iframe.className = 'player-iframe';
+            
+            playerWrapper.appendChild(iframe);
+            playerCard.appendChild(playerWrapper);
+            playerGrid.appendChild(playerCard);
+            
+            // Create YouTube player
+            const player = new YT.Player(`player-${index}`, {
+                height: '100%',
+                width: '100%',
+                videoId: currentVideoId,
+                playerVars: {
+                    'enablejsapi': 1,
+                    'autoplay': 0,
+                    'controls': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+            
+            players.push(player);
+        }
+        
+        // YouTube API event when a player is ready
+        function onPlayerReady(event) {
+            // Player is ready, but we don't autoplay
+        }
+        
+        // YouTube API event when player state changes
+        function onPlayerStateChange(event) {
+            // Handle state changes if needed
+        }
+        
+        // Play all videos
+        function playAllVideos() {
+            players.forEach(player => {
+                if (player && typeof player.playVideo === 'function') {
+                    player.playVideo();
+                }
+            });
+        }
+        
+        // Pause all videos
+        function pauseAllVideos() {
+            players.forEach(player => {
+                if (player && typeof player.pauseVideo === 'function') {
+                    player.pauseVideo();
+                }
+            });
+        }
+        
+        // Add one more player with the same link
+        function addPlayer() {
+            if (!currentVideoId) {
+                alert('Please load players first');
+                return;
+            }
+            
+            const index = players.length;
+            createPlayer(index);
+            playerCount++;
+        }
+        
+        // Add another player with a different link
+        function addAnotherPlayer() {
+            const newUrl = prompt('Enter a new YouTube URL:');
+            if (!newUrl) return;
+            
+            const videoId = extractVideoId(newUrl);
+            if (!videoId) {
+                alert('Please enter a valid YouTube URL');
+                return;
+            }
+            
+            const index = players.length;
+            const playerGrid = document.getElementById('playersGrid');
+            
+            // Create player card
+            const playerCard = document.createElement('div');
+            playerCard.className = 'player-card';
+            playerCard.id = `player-card-${index}`;
+            
+            // Create player wrapper
+            const playerWrapper = document.createElement('div');
+            playerWrapper.className = 'player-wrapper';
+            
+            // Create iframe
+            const iframe = document.createElement('div');
+            iframe.id = `player-${index}`;
+            iframe.className = 'player-iframe';
+            
+            playerWrapper.appendChild(iframe);
+            playerCard.appendChild(playerWrapper);
+            playerGrid.appendChild(playerCard);
+            
+            // Create YouTube player with new video ID
+            const player = new YT.Player(`player-${index}`, {
+                height: '100%',
+                width: '100%',
+                videoId: videoId,
+                playerVars: {
+                    'enablejsapi': 1,
+                    'autoplay': 0,
+                    'controls': 1,
+                    'rel': 0
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+            
+            players.push(player);
+            playerCount++;
+        }
+        
+        // Start the pause/resume cycle
+        function startPauseResumeCycle() {
+            // Clear any existing interval
+            if (pauseResumeInterval) {
+                clearInterval(pauseResumeInterval);
+            }
+            
+            // Set up the cycle
+            pauseResumeInterval = setInterval(() => {
+                // Pause all videos
+                pauseAllVideos();
+                
+                // Wait 3 seconds, then resume
+                setTimeout(() => {
+                    playAllVideos();
+                }, 3000);
+                
+            }, 60000); // 60 seconds
+        }
+        
+        // YouTube IFrame API callback
+        window.onYouTubeIframeAPIReady = function() {
+            // API is ready, players will be created when needed
+        };
+    </script>
+</body>
+</html>
