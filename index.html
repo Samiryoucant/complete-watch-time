@@ -133,6 +133,34 @@
             outline: none;
         }
         
+        .video-type-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .video-type-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: #f1f2f6;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .video-type-btn:hover {
+            background: #dfe4ea;
+        }
+        
+        .video-type-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
         .number-section {
             margin-bottom: 25px;
         }
@@ -223,6 +251,10 @@
             width: 100%;
             height: 0;
             padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        }
+        
+        .player-wrapper.shorts {
+            padding-bottom: 177.78%; /* 9:16 aspect ratio for Shorts */
         }
         
         .player-iframe {
@@ -363,6 +395,10 @@
                 padding: 8px 10px;
                 font-size: 0.9rem;
             }
+            
+            .video-type-buttons {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -384,7 +420,12 @@
         <div id="mainScreen">
             <div class="input-section">
                 <label class="input-label" for="youtubeUrl">Paste your YouTube link 🎥</label>
-                <input type="text" id="youtubeUrl" class="url-input" placeholder="https://www.youtube.com/watch?v=...">
+                <input type="text" id="youtubeUrl" class="url-input" placeholder="https://www.youtube.com/watch?v=... or https://youtube.com/shorts/...">
+                
+                <div class="video-type-buttons">
+                    <button class="video-type-btn active" data-type="regular">Regular Video 📺</button>
+                    <button class="video-type-btn" data-type="shorts">YouTube Shorts 📱</button>
+                </div>
             </div>
             
             <div class="number-section">
@@ -428,6 +469,7 @@
         let currentVideoId = '';
         let playerCount = 0;
         let pauseResumeInterval;
+        let videoType = 'regular'; // 'regular' or 'shorts'
         
         // Wait for the YouTube IFrame API to load
         let tag = document.createElement('script');
@@ -457,6 +499,19 @@
             document.getElementById('cancelBtn').addEventListener('click', function() {
                 document.getElementById('disclaimerScreen').style.display = 'none';
                 document.getElementById('mainScreen').style.display = 'block';
+            });
+            
+            // Video type buttons
+            const videoTypeButtons = document.querySelectorAll('.video-type-btn');
+            videoTypeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    videoTypeButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    // Set video type
+                    videoType = this.getAttribute('data-type');
+                });
             });
             
             // Number buttons
@@ -496,9 +551,23 @@
         
         // Extract video ID from YouTube URL
         function extractVideoId(url) {
+            // Regular YouTube video URL
             const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
             const match = url.match(regExp);
-            return (match && match[7].length === 11) ? match[7] : null;
+            
+            if (match && match[7].length === 11) {
+                return match[7];
+            }
+            
+            // YouTube Shorts URL
+            const shortsRegExp = /^.*(youtube.com\/shorts\/|youtu.be\/)([^#&?]{11}).*/;
+            const shortsMatch = url.match(shortsRegExp);
+            
+            if (shortsMatch && shortsMatch[2].length === 11) {
+                return shortsMatch[2];
+            }
+            
+            return null;
         }
         
         // Load players based on user input
@@ -548,7 +617,7 @@
             
             // Create player wrapper
             const playerWrapper = document.createElement('div');
-            playerWrapper.className = 'player-wrapper';
+            playerWrapper.className = videoType === 'shorts' ? 'player-wrapper shorts' : 'player-wrapper';
             
             // Create iframe
             const iframe = document.createElement('div');
@@ -630,6 +699,9 @@
                 return;
             }
             
+            // Ask for video type
+            const type = confirm('Is this a YouTube Shorts video? Click OK for Shorts, Cancel for regular video.');
+            
             const index = players.length;
             const playerGrid = document.getElementById('playersGrid');
             
@@ -640,7 +712,7 @@
             
             // Create player wrapper
             const playerWrapper = document.createElement('div');
-            playerWrapper.className = 'player-wrapper';
+            playerWrapper.className = type ? 'player-wrapper shorts' : 'player-wrapper';
             
             // Create iframe
             const iframe = document.createElement('div');
